@@ -62,7 +62,7 @@ class ChatIntegrationTest {
         doAnswer { invocation ->
             val command = invocation.arguments[0] as AiCompletionCommand
             AiCompletionResult(answer = "answer to ${command.messages.last().content}", model = command.model ?: "fake-model")
-        }.`when`(aiClient).complete(any(AiCompletionCommand::class.java))
+        }.`when`(aiClient).complete(anyAiCompletionCommand())
 
         val token = signupAndLogin("chat-${System.nanoTime()}@example.com")
 
@@ -115,6 +115,10 @@ class ChatIntegrationTest {
         assertEquals("STREAMING_NOT_READY", json(response.body!!)["error"]["code"].asText())
         assertEquals(0, chatRepository.count())
     }
+
+
+    private fun anyAiCompletionCommand(): AiCompletionCommand =
+        any(AiCompletionCommand::class.java) ?: AiCompletionCommand(model = null, messages = emptyList())
 
     private fun signupAndLogin(email: String): String {
         exchange("/api/auth/signup", HttpMethod.POST, mapOf("email" to email, "password" to "password123", "name" to "Member"), null)
