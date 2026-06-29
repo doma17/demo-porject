@@ -1,5 +1,6 @@
 package com.example.demoproject.auth.security
 
+import com.example.demoproject.ai.OpenAiProperties
 import com.example.demoproject.common.api.ApiResponse
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nimbusds.jose.jwk.source.ImmutableSecret
@@ -29,7 +30,7 @@ import java.time.Clock
 import javax.crypto.spec.SecretKeySpec
 
 @Configuration
-@EnableConfigurationProperties(AuthProperties::class)
+@EnableConfigurationProperties(AuthProperties::class, OpenAiProperties::class)
 class SecurityConfig {
     @Bean
     fun securityFilterChain(http: HttpSecurity, objectMapper: ObjectMapper): SecurityFilterChain =
@@ -38,6 +39,7 @@ class SecurityConfig {
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
                 auth.requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/login", "/api/auth/refresh", "/api/auth/logout").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/", "/index.html", "/favicon.ico", "/assets/**", "/*.css", "/*.js").permitAll()
                     .anyRequest().authenticated()
             }
             .exceptionHandling { exceptions ->
