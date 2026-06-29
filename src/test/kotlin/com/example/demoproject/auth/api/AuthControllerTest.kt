@@ -66,7 +66,7 @@ class AuthControllerTest {
 
 	@Test
 	fun `duplicate email returns conflict error response`() {
-		doThrow(DuplicateEmailException("user@example.com")).`when`(authService).signup(anySignupCommand())
+		doThrow(DuplicateEmailException()).`when`(authService).signup(anySignupCommand())
 
 		mockMvc.post("/api/auth/signup") {
 			contentType = MediaType.APPLICATION_JSON

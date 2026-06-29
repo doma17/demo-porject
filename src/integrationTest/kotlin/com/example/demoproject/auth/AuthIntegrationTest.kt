@@ -82,6 +82,16 @@ class AuthIntegrationTest {
         assertEquals(AuthService.hashRefreshToken(refreshToken), persistedRefresh.tokenHash)
         assertFalse(persistedRefresh.tokenHash == refreshToken)
 
+        val deniedMe = restTemplate.getForEntity("http://localhost:$port/api/users/me", String::class.java)
+        assertEquals(HttpStatus.UNAUTHORIZED, deniedMe.statusCode)
+
+        val me = getJson("/api/users/me", accessToken)
+        assertEquals(HttpStatus.OK, me.statusCode)
+        val meBody = json(me.body!!)
+        assertEquals(savedUser.id.toString(), meBody["data"]["id"].asText())
+        assertEquals(email, meBody["data"]["email"].asText())
+        assertEquals("member", meBody["data"]["role"].asText())
+
         val refresh = postJson("/api/auth/refresh", mapOf("refreshToken" to refreshToken))
         assertEquals(HttpStatus.OK, refresh.statusCode)
         val refreshBody = json(refresh.body!!)
@@ -110,6 +120,13 @@ class AuthIntegrationTest {
         "http://localhost:$port$path",
         HttpMethod.POST,
         HttpEntity(objectMapper.writeValueAsString(body), HttpHeaders().apply { contentType = MediaType.APPLICATION_JSON }),
+        String::class.java,
+    )
+
+    private fun getJson(path: String, accessToken: String) = restTemplate.exchange(
+        "http://localhost:$port$path",
+        HttpMethod.GET,
+        HttpEntity(null, HttpHeaders().apply { setBearerAuth(accessToken) }),
         String::class.java,
     )
 

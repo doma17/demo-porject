@@ -1,6 +1,6 @@
 package com.example.demoproject.auth
 
-import com.example.demoproject.user.persistence.SpringDataUserJpaRepository
+import com.example.demoproject.user.persistence.UserRepository
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
@@ -27,7 +27,7 @@ class SignupIntegrationTest {
 	private lateinit var mockMvc: MockMvc
 
 	@Autowired
-	private lateinit var userJpaRepository: SpringDataUserJpaRepository
+	private lateinit var userJpaRepository: UserRepository
 
 	@Autowired
 	private lateinit var passwordEncoder: PasswordEncoder
@@ -44,7 +44,7 @@ class SignupIntegrationTest {
 			jsonPath("$.data.role") { value("member") }
 		}
 
-		val saved = requireNotNull(userJpaRepository.findByEmail("user@example.com"))
+		val saved = userJpaRepository.findByEmail("user@example.com").orElseThrow()
 		assertNotEquals("password123", saved.passwordHash)
 		assertTrue(passwordEncoder.matches("password123", saved.passwordHash))
 		assertTrue(saved.role.name == "member")

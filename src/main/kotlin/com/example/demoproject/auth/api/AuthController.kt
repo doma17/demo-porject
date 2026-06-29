@@ -52,38 +52,3 @@ class AuthController(
         return ApiResponse.success()
     }
 }
-
-data class SignupRequest(
-	@field:NotBlank(message = "Email is required")
-	@field:Email(message = "Email must be valid")
-	val email: String,
-
-	@field:NotBlank(message = "Password is required")
-	@field:Size(min = 8, message = "Password must be at least 8 characters")
-	val password: String,
-
-	@field:NotBlank(message = "Name is required")
-	val name: String,
-) {
-	fun toCommand(): SignupCommand = SignupCommand(
-		email = email,
-		password = password,
-		name = name,
-	)
-}
-
-data class SignupResponse(
-	val id: UUID,
-	val email: String,
-	val name: String,
-	val role: String,
-	val createdAt: Instant,
-)
-
-private fun SignupResult.toResponse(): SignupResponse = SignupResponse(
-	id = id,
-	email = email,
-	name = name,
-	role = role,
-	createdAt = createdAt,
-)

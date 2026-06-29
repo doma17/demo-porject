@@ -10,7 +10,9 @@ Source of the truth로 구성됩니다.
 - DB : postgres 15.8
 
 
-## 레이어와 DTO 기준
+## 코드 켄벤션
+
+### 레이어와 DTO 기준
 
 기본 흐름은 `Controller -> Service -> Repository`이다.
 
