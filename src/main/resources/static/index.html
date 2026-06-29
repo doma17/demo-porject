@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Chat Demo</title>
+  <style>
+    :root { color-scheme: light dark; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { margin: 0; background: #0f172a; color: #e2e8f0; }
+    header { padding: 32px min(6vw, 56px); background: linear-gradient(135deg, #2563eb, #7c3aed); }
+    main { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 24px min(6vw, 56px) 48px; }
+    section { background: rgba(15, 23, 42, .9); border: 1px solid #334155; border-radius: 16px; padding: 20px; box-shadow: 0 12px 40px rgba(0, 0, 0, .22); }
+    h1, h2 { margin-top: 0; }
+    label { display: grid; gap: 6px; margin: 12px 0; color: #cbd5e1; font-weight: 600; }
+    input, textarea, select, button { border-radius: 10px; border: 1px solid #475569; padding: 10px 12px; font: inherit; }
+    input, textarea, select { background: #020617; color: #f8fafc; }
+    textarea { min-height: 94px; resize: vertical; }
+    button { cursor: pointer; border: 0; background: #38bdf8; color: #082f49; font-weight: 800; margin: 6px 6px 6px 0; }
+    button.secondary { background: #a78bfa; color: #2e1065; }
+    button.danger { background: #fb7185; color: #4c0519; }
+    pre { white-space: pre-wrap; word-break: break-word; background: #020617; border: 1px solid #1e293b; border-radius: 12px; min-height: 72px; padding: 12px; }
+    .wide { grid-column: 1 / -1; }
+    .muted { color: #94a3b8; }
+    .ok { color: #86efac; }
+    .err { color: #fca5a5; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>AI Chat Customer Demo</h1>
+  <p>JWT 인증, OpenAI 기반 채팅, 스레드 목록, 피드백, 관리자 분석/CSV 보고서를 같은 origin API로 시연합니다.</p>
+  <p class="muted">Streaming은 이번 데모 페이지에서 비활성화되어 있습니다. API가 지원하지 않으면 명시적인 오류를 표시합니다.</p>
+</header>
+<main>
+  <section>
+    <h2>1. Signup / Login</h2>
+    <label>Email <input id="email" type="email" value="member@example.com" autocomplete="username"></label>
+    <label>Password <input id="password" type="password" value="password123" autocomplete="current-password"></label>
+    <label>Name <input id="name" value="Demo Member"></label>
+    <button id="signupBtn">Signup</button>
+    <button id="loginBtn" class="secondary">Login</button>
+    <button id="clearTokenBtn" class="danger">Clear token</button>
+    <p id="tokenState" class="muted">No token loaded.</p>
+  </section>
+
+  <section>
+    <h2>2. Ask Chatbot</h2>
+    <label>Model override (optional) <input id="model" placeholder="e.g. gpt-5.5"></label>
+    <label>Question <textarea id="question">이번 데모 API로 무엇을 보여줄 수 있나요?</textarea></label>
+    <button id="askBtn">Ask AI</button>
+    <button id="listChatsBtn" class="secondary">List threads</button>
+    <p class="muted">답변의 chatId를 복사해 피드백 생성에 사용할 수 있습니다.</p>
+  </section>
+
+  <section>
+    <h2>3. Feedback</h2>
+    <label>Chat ID <input id="chatId" placeholder="chatId from chat response"></label>
+    <label>Positive?
+      <select id="positive"><option value="true">true</option><option value="false">false</option></select>
+    </label>
+    <button id="feedbackBtn">Create feedback</button>
+    <button id="listFeedbackBtn" class="secondary">List feedback</button>
+    <p class="muted">피드백 API가 아직 배포되지 않은 환경이면 오류 패널에 그대로 표시됩니다.</p>
+  </section>
+
+  <section>
+    <h2>4. Admin</h2>
+    <p class="muted">관리자 계정으로 로그인한 JWT가 필요합니다.</p>
+    <button id="activityBtn">Activity counts</button>
+    <button id="reportBtn" class="secondary">Download chat CSV</button>
+  </section>
+
+  <section class="wide">
+    <h2>Result</h2>
+    <pre id="result">Ready.</pre>
+  </section>
+</main>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const result = $('result');
+  let token = localStorage.getItem('demo.jwt') || '';
+
+  function setResult(title, payload, isError = false) {
+    result.className = isError ? 'err' : 'ok';
+    result.textContent = `${title}\n${typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2)}`;
+  }
+
+  function updateTokenState() {
+    $('tokenState').textContent = token ? `Token loaded (${token.length} chars).` : 'No token loaded.';
+  }
+
+  async function request(path, options = {}) {
+    const headers = { ...(options.headers || {}) };
+    if (!(options.body instanceof FormData)) headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const response = await fetch(path, { ...options, headers });
+    const contentType = response.headers.get('content-type') || '';
+    const body = contentType.includes('application/json') ? await response.json() : await response.text();
+    if (!response.ok) throw { status: response.status, body };
+    return body;
+  }
+
+  $('signupBtn').onclick = async () => {
+    try {
+      const body = { email: $('email').value, password: $('password').value, name: $('name').value };
+      setResult('Signup', await request('/api/auth/signup', { method: 'POST', body: JSON.stringify(body) }));
+    } catch (error) { setResult('Signup failed', error, true); }
+  };
+
+  $('loginBtn').onclick = async () => {
+    try {
+      const body = { email: $('email').value, password: $('password').value };
+      const response = await request('/api/auth/login', { method: 'POST', body: JSON.stringify(body) });
+      token = response.data && response.data.accessToken ? response.data.accessToken : '';
+      if (token) localStorage.setItem('demo.jwt', token);
+      updateTokenState();
+      setResult('Login', response);
+    } catch (error) { setResult('Login failed', error, true); }
+  };
+
+  $('clearTokenBtn').onclick = () => {
+    token = '';
+    localStorage.removeItem('demo.jwt');
+    updateTokenState();
+    setResult('Token cleared', 'Login again to call protected APIs.');
+  };
+
+  $('askBtn').onclick = async () => {
+    try {
+      const model = $('model').value.trim();
+      const body = { question: $('question').value, isStreaming: false, ...(model ? { model } : {}) };
+      const response = await request('/api/chats', { method: 'POST', body: JSON.stringify(body) });
+      if (response.data && response.data.chatId) $('chatId').value = response.data.chatId;
+      setResult('Chat response', response);
+    } catch (error) { setResult('Chat failed', error, true); }
+  };
+
+  $('listChatsBtn').onclick = async () => {
+    try { setResult('Threads', await request('/api/chats?sort=lastChatAt,desc&page=0&size=10')); }
+    catch (error) { setResult('List chats failed', error, true); }
+  };
+
+  $('feedbackBtn').onclick = async () => {
+    try {
+      const body = { chatId: $('chatId').value, positive: $('positive').value === 'true' };
+      setResult('Feedback', await request('/api/feedback', { method: 'POST', body: JSON.stringify(body) }));
+    } catch (error) { setResult('Feedback failed', error, true); }
+  };
+
+  $('listFeedbackBtn').onclick = async () => {
+    try { setResult('Feedback list', await request('/api/feedback?page=0&size=10')); }
+    catch (error) { setResult('List feedback failed', error, true); }
+  };
+
+  $('activityBtn').onclick = async () => {
+    try { setResult('Activity', await request('/api/admin/analytics/activity')); }
+    catch (error) { setResult('Activity failed', error, true); }
+  };
+
+  $('reportBtn').onclick = async () => {
+    try {
+      const csv = await request('/api/admin/reports/chats.csv', { headers: { Accept: 'text/csv' } });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const link = Object.assign(document.createElement('a'), { href: url, download: 'chat-report.csv' });
+      link.click();
+      URL.revokeObjectURL(url);
+      setResult('CSV report', csv);
+    } catch (error) { setResult('Report failed', error, true); }
+  };
+
+  updateTokenState();
+})();
+</script>
+</body>
+</html>

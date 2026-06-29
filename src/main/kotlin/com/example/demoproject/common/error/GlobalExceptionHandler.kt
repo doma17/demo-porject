@@ -27,6 +27,17 @@ class GlobalExceptionHandler {
     fun forbidden(ex: ForbiddenException): ResponseEntity<ApiResponse<Nothing>> =
         ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(ex.errorCode, ex.message))
 
+    @ExceptionHandler(ApiException::class)
+    fun apiException(ex: ApiException): ResponseEntity<ApiResponse<Nothing>> {
+        val status = when (ex.errorCode) {
+            "AI_PROVIDER_ERROR" -> HttpStatus.BAD_GATEWAY
+            "STREAMING_NOT_READY" -> HttpStatus.NOT_IMPLEMENTED
+            "THREAD_NOT_FOUND" -> HttpStatus.NOT_FOUND
+            else -> HttpStatus.BAD_REQUEST
+        }
+        return ResponseEntity.status(status).body(ApiResponse.error(ex.errorCode, ex.message))
+    }
+
     @ExceptionHandler(JwtException::class)
     fun invalidJwt(ex: JwtException): ResponseEntity<ApiResponse<Nothing>> =
         ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("INVALID_TOKEN", ex.message ?: "Invalid token"))
