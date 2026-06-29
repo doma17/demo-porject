@@ -84,6 +84,7 @@ class AuthIntegrationTest {
 
         val deniedMe = restTemplate.getForEntity("http://localhost:$port/api/users/me", String::class.java)
         assertEquals(HttpStatus.UNAUTHORIZED, deniedMe.statusCode)
+        assertEquals("UNAUTHORIZED", json(deniedMe.body!!)["error"]["code"].asText())
 
         val me = getJson("/api/users/me", accessToken)
         assertEquals(HttpStatus.OK, me.statusCode)
@@ -91,6 +92,10 @@ class AuthIntegrationTest {
         assertEquals(savedUser.id.toString(), meBody["data"]["id"].asText())
         assertEquals(email, meBody["data"]["email"].asText())
         assertEquals("member", meBody["data"]["role"].asText())
+
+        val invalidRefresh = postJson("/api/auth/refresh", mapOf("refreshToken" to "not-a-valid-refresh-token"))
+        assertEquals(HttpStatus.UNAUTHORIZED, invalidRefresh.statusCode)
+        assertEquals("INVALID_REFRESH_TOKEN", json(invalidRefresh.body!!)["error"]["code"].asText())
 
         val refresh = postJson("/api/auth/refresh", mapOf("refreshToken" to refreshToken))
         assertEquals(HttpStatus.OK, refresh.statusCode)

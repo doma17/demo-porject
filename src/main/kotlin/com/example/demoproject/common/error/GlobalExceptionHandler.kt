@@ -19,8 +19,12 @@ class GlobalExceptionHandler {
     fun invalidCredentials(ex: InvalidCredentialsException): ResponseEntity<ApiResponse<Nothing>> =
         ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(ex.errorCode, ex.message))
 
-    @ExceptionHandler(InvalidRefreshTokenException::class, JwtException::class)
-    fun invalidToken(ex: RuntimeException): ResponseEntity<ApiResponse<Nothing>> =
+    @ExceptionHandler(InvalidRefreshTokenException::class)
+    fun invalidRefreshToken(ex: InvalidRefreshTokenException): ResponseEntity<ApiResponse<Nothing>> =
+        ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(ex.errorCode, ex.message))
+
+    @ExceptionHandler(JwtException::class)
+    fun invalidJwt(ex: JwtException): ResponseEntity<ApiResponse<Nothing>> =
         ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("INVALID_TOKEN", ex.message ?: "Invalid token"))
 
     @ExceptionHandler(MethodArgumentNotValidException::class)

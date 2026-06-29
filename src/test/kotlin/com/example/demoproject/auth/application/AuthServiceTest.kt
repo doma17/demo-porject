@@ -114,6 +114,26 @@ class AuthServiceTest {
         assertFalse(entity.isActive(clock.instant()))
     }
 
+    @Test
+    fun `expired refresh token cannot be reused`() {
+        val userRepository = mock(UserRepository::class.java)
+        val refreshTokenRepository = mock(RefreshTokenRepository::class.java)
+        val token = "expired-refresh-token"
+        val entity = RefreshTokenEntity(
+            user = UserEntity(id = UUID.randomUUID(), email = "member@example.com", passwordHash = "hash", name = "Member"),
+            tokenHash = AuthService.hashRefreshToken(token),
+            expiresAt = clock.instant().minus(Duration.ofSeconds(1)),
+        )
+        `when`(refreshTokenRepository.findByTokenHash(AuthService.hashRefreshToken(token))).thenReturn(Optional.of(entity))
+
+        val service = service(userRepository, refreshTokenRepository)
+
+        assertThrows(com.example.demoproject.common.error.InvalidRefreshTokenException::class.java) {
+            service.refresh(RefreshTokenCommand(token))
+        }
+        assertFalse(entity.isActive(clock.instant()))
+    }
+
     private fun service(userRepository: UserRepository, refreshTokenRepository: RefreshTokenRepository): AuthService = AuthService(
         userRepository = userRepository,
         refreshTokenRepository = refreshTokenRepository,
