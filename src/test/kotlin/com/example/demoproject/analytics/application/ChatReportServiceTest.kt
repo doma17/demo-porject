@@ -29,6 +29,7 @@ class ChatReportServiceTest {
     @Test
     fun `record chat stores report entry and increments activity`() {
         val user = user()
+        `when`(repository.save(org.mockito.ArgumentMatchers.any(ChatReportEntryEntity::class.java))).thenAnswer { it.arguments[0] }
 
         service.recordChat(user, "question", "answer")
 
