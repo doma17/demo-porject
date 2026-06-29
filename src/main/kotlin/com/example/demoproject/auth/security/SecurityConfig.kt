@@ -38,8 +38,8 @@ class SecurityConfig {
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
-                auth.requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/login", "/api/auth/refresh", "/api/auth/logout").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/", "/index.html", "/favicon.ico", "/assets/**", "/*.css", "/*.js").permitAll()
+                auth.requestMatchers("/", "/index.html", "/favicon.ico", "/assets/**", "/*.css", "/*.js", "/error").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/login", "/api/auth/refresh", "/api/auth/logout").permitAll()
                     .anyRequest().authenticated()
             }
             .exceptionHandling { exceptions ->
