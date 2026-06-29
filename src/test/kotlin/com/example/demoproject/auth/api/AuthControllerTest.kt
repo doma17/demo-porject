@@ -7,7 +7,8 @@ import com.example.demoproject.common.error.DuplicateEmailException
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.`when`
+import org.mockito.Mockito.doReturn
+import org.mockito.Mockito.doThrow
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -30,7 +31,7 @@ class AuthControllerTest {
 
 	@Test
 	fun `signup returns api response`() {
-		`when`(authService.signup(any(SignupCommand::class.java))).thenReturn(
+		doReturn(
 			SignupResult(
 				id = UUID.fromString("00000000-0000-0000-0000-000000000001"),
 				email = "user@example.com",
@@ -38,7 +39,7 @@ class AuthControllerTest {
 				role = "member",
 				createdAt = Instant.parse("2026-06-29T00:00:00Z"),
 			),
-		)
+		).`when`(authService).signup(anySignupCommand())
 
 		mockMvc.post("/api/auth/signup") {
 			contentType = MediaType.APPLICATION_JSON
@@ -65,7 +66,7 @@ class AuthControllerTest {
 
 	@Test
 	fun `duplicate email returns conflict error response`() {
-		`when`(authService.signup(any(SignupCommand::class.java))).thenThrow(DuplicateEmailException("user@example.com"))
+		doThrow(DuplicateEmailException("user@example.com")).`when`(authService).signup(anySignupCommand())
 
 		mockMvc.post("/api/auth/signup") {
 			contentType = MediaType.APPLICATION_JSON
@@ -76,4 +77,7 @@ class AuthControllerTest {
 			jsonPath("$.error.code") { value("DUPLICATE_EMAIL") }
 		}
 	}
+
+	private fun anySignupCommand(): SignupCommand =
+		any(SignupCommand::class.java) ?: SignupCommand("user@example.com", "password123", "User")
 }
