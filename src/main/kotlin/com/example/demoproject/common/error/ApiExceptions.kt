@@ -17,3 +17,7 @@ class AiProviderException(message: String = "AI provider request failed", cause:
         if (cause != null) initCause(cause)
     }
 }
+class DuplicateFeedbackException : ApiException("DUPLICATE_FEEDBACK", "Feedback already exists for this chat")
+class FeedbackNotFoundException : ApiException("FEEDBACK_NOT_FOUND", "Feedback was not found")
+class ForbiddenOperationException(message: String = "You do not have permission to perform this operation") : ApiException("FORBIDDEN", message)
+
