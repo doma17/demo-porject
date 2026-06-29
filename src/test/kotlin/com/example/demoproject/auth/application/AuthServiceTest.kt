@@ -27,7 +27,6 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
-import java.time.ZoneOffset
 import java.util.Optional
 import java.util.UUID
 import javax.crypto.spec.SecretKeySpec
@@ -36,7 +35,7 @@ import javax.crypto.spec.SecretKeySpec
 class AuthServiceTest {
     private val secret = "unit-test-secret-must-be-at-least-32-bytes-long"
     private val properties = AuthProperties(secret = secret, accessTokenTtl = Duration.ofMinutes(15), refreshTokenTtl = Duration.ofDays(7))
-    private val clock = Clock.fixed(Instant.parse("2026-06-29T00:00:00Z"), ZoneOffset.UTC)
+    private val clock = Clock.systemUTC()
     private val encoder = BCryptPasswordEncoder()
     private val jwtEncoder = NimbusJwtEncoder(ImmutableSecret(secret.toByteArray()))
     private val jwtDecoder = NimbusJwtDecoder

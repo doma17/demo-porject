@@ -1,6 +1,8 @@
 package com.example.demoproject.auth.security
 
 import com.example.demoproject.user.persistence.UserEntity
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm
+import org.springframework.security.oauth2.jwt.JwsHeader
 import org.springframework.security.oauth2.jwt.JwtClaimsSet
 import org.springframework.security.oauth2.jwt.JwtEncoder
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters
@@ -25,6 +27,7 @@ class JwtTokenProvider(
             .claim("email", user.email)
             .claim("role", user.role.name)
             .build()
-        return jwtEncoder.encode(JwtEncoderParameters.from(claims)).tokenValue
+        val headers = JwsHeader.with(MacAlgorithm.HS256).build()
+        return jwtEncoder.encode(JwtEncoderParameters.from(headers, claims)).tokenValue
     }
 }
