@@ -27,6 +27,18 @@ class GlobalExceptionHandler {
     fun forbidden(ex: ForbiddenException): ResponseEntity<ApiResponse<Nothing>> =
         ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(ex.errorCode, ex.message))
 
+    @ExceptionHandler(DuplicateFeedbackException::class)
+    fun duplicateFeedback(ex: DuplicateFeedbackException): ResponseEntity<ApiResponse<Nothing>> =
+        ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(ex.errorCode, ex.message))
+
+    @ExceptionHandler(FeedbackNotFoundException::class)
+    fun feedbackNotFound(ex: FeedbackNotFoundException): ResponseEntity<ApiResponse<Nothing>> =
+        ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.errorCode, ex.message))
+
+    @ExceptionHandler(ForbiddenOperationException::class)
+    fun forbiddenOperation(ex: ForbiddenOperationException): ResponseEntity<ApiResponse<Nothing>> =
+        ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(ex.errorCode, ex.message))
+
     @ExceptionHandler(ThreadNotFoundException::class)
     fun threadNotFound(ex: ThreadNotFoundException): ResponseEntity<ApiResponse<Nothing>> =
         ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.errorCode, ex.message))
