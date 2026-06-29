@@ -30,6 +30,11 @@ services:
       AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?AUTH_JWT_SECRET must be set and at least 32 characters long}
       AI_API_KEY: ${AI_API_KEY:?AI_API_KEY must be set}
       AI_MODEL: ${AI_MODEL:-gpt-5.5}
+      AI_BASE_URL: ${AI_BASE_URL:-https://api.openai.com/v1}
+      AI_TIMEOUT: ${AI_TIMEOUT:-30s}
+      ADMIN_BOOTSTRAP_EMAIL: ${ADMIN_BOOTSTRAP_EMAIL:-}
+      ADMIN_BOOTSTRAP_PASSWORD: ${ADMIN_BOOTSTRAP_PASSWORD:-}
+      ADMIN_BOOTSTRAP_NAME: ${ADMIN_BOOTSTRAP_NAME:-Admin}
     ports:
       - "${APP_PORT:-8080}:8080"
     restart: unless-stopped
