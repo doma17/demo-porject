@@ -3,20 +3,32 @@ package com.example.demoproject.common.error
 import com.example.demoproject.common.api.ApiResponse
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.oauth2.jwt.JwtException
+import org.springframework.validation.FieldError
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
-	@ExceptionHandler(BusinessException::class)
-	fun handleBusinessException(exception: BusinessException): ResponseEntity<ApiResponse<Nothing>> =
-		ResponseEntity.status(exception.status).body(ApiResponse.error(exception.code, exception.message))
+    @ExceptionHandler(DuplicateEmailException::class)
+    fun duplicateEmail(ex: DuplicateEmailException): ResponseEntity<ApiResponse<Nothing>> =
+        ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(ex.errorCode, ex.message))
 
-	@ExceptionHandler(MethodArgumentNotValidException::class)
-	fun handleValidationException(exception: MethodArgumentNotValidException): ResponseEntity<ApiResponse<Nothing>> {
-		val message = exception.bindingResult.fieldErrors.firstOrNull()?.defaultMessage ?: "Invalid request"
-		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-			.body(ApiResponse.error("VALIDATION_ERROR", message))
-	}
+    @ExceptionHandler(InvalidCredentialsException::class)
+    fun invalidCredentials(ex: InvalidCredentialsException): ResponseEntity<ApiResponse<Nothing>> =
+        ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(ex.errorCode, ex.message))
+
+    @ExceptionHandler(InvalidRefreshTokenException::class, JwtException::class)
+    fun invalidToken(ex: RuntimeException): ResponseEntity<ApiResponse<Nothing>> =
+        ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("INVALID_TOKEN", ex.message ?: "Invalid token"))
+
+    @ExceptionHandler(MethodArgumentNotValidException::class)
+    fun validation(ex: MethodArgumentNotValidException): ResponseEntity<ApiResponse<Nothing>> {
+        val message = ex.bindingResult.allErrors.joinToString("; ") { error ->
+            val field = (error as? FieldError)?.field ?: error.objectName
+            "$field ${error.defaultMessage ?: "is invalid"}"
+        }
+        return ResponseEntity.badRequest().body(ApiResponse.error("VALIDATION_ERROR", message))
+    }
 }
