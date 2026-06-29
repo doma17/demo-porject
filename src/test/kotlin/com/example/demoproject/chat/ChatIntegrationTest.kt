@@ -62,7 +62,7 @@ class ChatIntegrationTest {
         doAnswer { invocation ->
             val command = invocation.arguments[0] as AiCompletionCommand
             AiCompletionResult(answer = "answer to ${command.messages.last().content}", model = command.model ?: "fake-model")
-        }.`when`(aiClient).complete(any(AiCompletionCommand::class.java))
+        }.`when`(aiClient).complete(anyAiCompletionCommand())
 
         val token = signupAndLogin("chat-${System.nanoTime()}@example.com")
 
@@ -138,6 +138,9 @@ class ChatIntegrationTest {
     )
 
     private fun json(raw: String): JsonNode = objectMapper.readTree(raw)
+
+    private fun anyAiCompletionCommand(): AiCompletionCommand =
+        any(AiCompletionCommand::class.java) ?: AiCompletionCommand(model = null, messages = emptyList())
 
     companion object {
         @Container
