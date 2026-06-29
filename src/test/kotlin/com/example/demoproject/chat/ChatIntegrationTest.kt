@@ -13,12 +13,13 @@ import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.doAnswer
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.boot.test.web.server.LocalServerPort
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Primary
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
@@ -26,7 +27,6 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
-import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
@@ -51,19 +51,11 @@ class ChatIntegrationTest {
     @Autowired
     lateinit var chatRepository: ChatRepository
 
-    @MockitoBean
-    lateinit var aiClient: AiClient
-
     @LocalServerPort
     var port: Int = 0
 
     @Test
     fun `authenticated chat creates persists reuses lists and deletes thread`() {
-        doAnswer { invocation ->
-            val command = invocation.arguments[0] as AiCompletionCommand
-            AiCompletionResult(answer = "answer to ${command.messages.last().content}", model = command.model ?: "fake-model")
-        }.`when`(aiClient).complete(anyAiCompletionCommand())
-
         val token = signupAndLogin("chat-${System.nanoTime()}@example.com")
 
         val first = postJson("/api/chats", mapOf("question" to "first question"), token)
@@ -117,9 +109,6 @@ class ChatIntegrationTest {
     }
 
 
-    private fun anyAiCompletionCommand(): AiCompletionCommand =
-        any(AiCompletionCommand::class.java) ?: AiCompletionCommand(model = null, messages = emptyList())
-
     private fun signupAndLogin(email: String): String {
         exchange("/api/auth/signup", HttpMethod.POST, mapOf("email" to email, "password" to "password123", "name" to "Member"), null)
         val login = exchange("/api/auth/login", HttpMethod.POST, mapOf("email" to email, "password" to "password123"), null)
@@ -143,8 +132,17 @@ class ChatIntegrationTest {
 
     private fun json(raw: String): JsonNode = objectMapper.readTree(raw)
 
-    private fun anyAiCompletionCommand(): AiCompletionCommand =
-        any(AiCompletionCommand::class.java) ?: AiCompletionCommand(model = null, messages = emptyList())
+    @TestConfiguration
+    class FakeAiClientConfig {
+        @Bean
+        @Primary
+        fun fakeAiClient(): AiClient = object : AiClient {
+            override fun complete(command: AiCompletionCommand): AiCompletionResult = AiCompletionResult(
+                answer = "answer to ${command.messages.last().content}",
+                model = command.model ?: "fake-model",
+            )
+        }
+    }
 
     companion object {
         @Container
