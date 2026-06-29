@@ -79,6 +79,21 @@ class FeedbackServiceTest {
     }
 
     @Test
+    fun `admin list uses global positive filter`() {
+        val admin = user(id = UUID.randomUUID(), role = UserRole.admin)
+        val owner = user(id = UUID.randomUUID())
+        val feedback = feedback(user = owner, positive = true)
+        val pageable = PageRequest.of(0, 20, Sort.by(Sort.Direction.ASC, "createdAt"))
+        `when`(userRepository.findById(admin.id!!)).thenReturn(Optional.of(admin))
+        `when`(feedbackRepository.findByPositive(true, pageable)).thenReturn(PageImpl(listOf(feedback), pageable, 1))
+
+        val result = service.list(FeedbackListQuery(admin.id!!, positive = true, page = 0, size = 20, direction = Sort.Direction.ASC))
+
+        assertEquals(1, result.totalElements)
+        assertEquals(owner.id, result.content.single().userId)
+    }
+
+    @Test
     fun `member cannot update feedback status`() {
         val user = user(id = UUID.randomUUID(), role = UserRole.member)
         `when`(userRepository.findById(user.id!!)).thenReturn(Optional.of(user))
