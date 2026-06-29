@@ -1,5 +1,6 @@
 package com.example.demoproject.auth.application
 
+import com.example.demoproject.analytics.application.ActivityLogRecorder
 import com.example.demoproject.auth.persistence.RefreshTokenEntity
 import com.example.demoproject.auth.persistence.RefreshTokenRepository
 import com.example.demoproject.auth.security.AuthProperties
@@ -75,6 +76,24 @@ class AuthServiceTest {
     }
 
     @Test
+    fun `signup records activity after creating member`() {
+        val userRepository = mock(UserRepository::class.java)
+        val refreshTokenRepository = mock(RefreshTokenRepository::class.java)
+        val recorder = RecordingActivityLogRecorder()
+        `when`(userRepository.existsByEmail("member@example.com")).thenReturn(false)
+        `when`(userRepository.save(any(UserEntity::class.java))).thenAnswer {
+            (it.arguments[0] as UserEntity).apply { id = UUID.randomUUID() }
+        }
+
+        val service = service(userRepository, refreshTokenRepository, recorder)
+
+        service.signup(SignupCommand("MEMBER@example.com", "password123", "Member"))
+
+        assertEquals(1, recorder.signupCount)
+        assertEquals(0, recorder.loginCount)
+    }
+
+    @Test
     fun `login rejects invalid password`() {
         val userRepository = mock(UserRepository::class.java)
         val refreshTokenRepository = mock(RefreshTokenRepository::class.java)
@@ -134,12 +153,35 @@ class AuthServiceTest {
         assertFalse(entity.isActive(clock.instant()))
     }
 
-    private fun service(userRepository: UserRepository, refreshTokenRepository: RefreshTokenRepository): AuthService = AuthService(
+    private fun service(
+        userRepository: UserRepository,
+        refreshTokenRepository: RefreshTokenRepository,
+        activityLogRecorder: ActivityLogRecorder = RecordingActivityLogRecorder(),
+    ): AuthService = AuthService(
         userRepository = userRepository,
         refreshTokenRepository = refreshTokenRepository,
         passwordEncoder = encoder,
         jwtTokenProvider = JwtTokenProvider(jwtEncoder, properties, clock),
         authProperties = properties,
+        activityLogRecorder = activityLogRecorder,
         clock = clock,
     )
+
+    private class RecordingActivityLogRecorder : ActivityLogRecorder {
+        var signupCount = 0
+        var loginCount = 0
+        var chatCreatedCount = 0
+
+        override fun recordSignup() {
+            signupCount += 1
+        }
+
+        override fun recordLogin() {
+            loginCount += 1
+        }
+
+        override fun recordChatCreated() {
+            chatCreatedCount += 1
+        }
+    }
 }

@@ -1,5 +1,6 @@
 package com.example.demoproject.auth.application
 
+import com.example.demoproject.analytics.application.ActivityLogRecorder
 import com.example.demoproject.auth.persistence.RefreshTokenEntity
 import com.example.demoproject.auth.persistence.RefreshTokenRepository
 import com.example.demoproject.auth.security.AuthProperties
@@ -28,6 +29,7 @@ class AuthService(
     private val passwordEncoder: PasswordEncoder,
     private val jwtTokenProvider: JwtTokenProvider,
     private val authProperties: AuthProperties,
+    private val activityLogRecorder: ActivityLogRecorder,
     private val clock: Clock,
 ) {
     private val secureRandom = SecureRandom()
@@ -46,6 +48,7 @@ class AuthService(
                 createdAt = Instant.now(clock),
             ),
         )
+        activityLogRecorder.recordSignup()
         return SignupResult(
             id = requireNotNull(user.id),
             email = user.email,
@@ -59,6 +62,7 @@ class AuthService(
     fun login(command: LoginCommand): TokenResult {
         val user = userRepository.findByEmail(normalizeEmail(command.email)).orElseThrow { InvalidCredentialsException() }
         if (!passwordEncoder.matches(command.password, user.passwordHash)) throw InvalidCredentialsException()
+        activityLogRecorder.recordLogin()
         return issueTokens(user)
     }
 
