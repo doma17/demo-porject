@@ -23,6 +23,26 @@ class GlobalExceptionHandler {
     fun invalidRefreshToken(ex: InvalidRefreshTokenException): ResponseEntity<ApiResponse<Nothing>> =
         ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(ex.errorCode, ex.message))
 
+    @ExceptionHandler(ForbiddenException::class)
+    fun forbidden(ex: ForbiddenException): ResponseEntity<ApiResponse<Nothing>> =
+        ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(ex.errorCode, ex.message))
+
+    @ExceptionHandler(ThreadNotFoundException::class)
+    fun threadNotFound(ex: ThreadNotFoundException): ResponseEntity<ApiResponse<Nothing>> =
+        ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.errorCode, ex.message))
+
+    @ExceptionHandler(ChatNotFoundException::class)
+    fun chatNotFound(ex: ChatNotFoundException): ResponseEntity<ApiResponse<Nothing>> =
+        ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.errorCode, ex.message))
+
+    @ExceptionHandler(StreamingNotReadyException::class)
+    fun streamingNotReady(ex: StreamingNotReadyException): ResponseEntity<ApiResponse<Nothing>> =
+        ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(ApiResponse.error(ex.errorCode, ex.message))
+
+    @ExceptionHandler(AiProviderException::class)
+    fun aiProvider(ex: AiProviderException): ResponseEntity<ApiResponse<Nothing>> =
+        ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(ApiResponse.error(ex.errorCode, ex.message))
+
     @ExceptionHandler(JwtException::class)
     fun invalidJwt(ex: JwtException): ResponseEntity<ApiResponse<Nothing>> =
         ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("INVALID_TOKEN", ex.message ?: "Invalid token"))
