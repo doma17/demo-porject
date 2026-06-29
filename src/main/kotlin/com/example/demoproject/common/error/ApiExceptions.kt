@@ -20,3 +20,6 @@ class AiProviderException(
 
 class StreamingNotReadyException : ApiException("STREAMING_NOT_READY", "Streaming chat is not available in this demo")
 class ThreadNotFoundException : ApiException("THREAD_NOT_FOUND", "Thread was not found")
+class DuplicateFeedbackException : ApiException("DUPLICATE_FEEDBACK", "Feedback already exists for this chat")
+class FeedbackNotFoundException : ApiException("FEEDBACK_NOT_FOUND", "Feedback was not found")
+class ForbiddenOperationException(message: String = "Operation is forbidden") : ApiException("FORBIDDEN", message)
