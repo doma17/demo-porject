@@ -86,6 +86,10 @@ class AuthIntegrationTest {
         assertEquals(HttpStatus.UNAUTHORIZED, deniedMe.statusCode)
         assertEquals("UNAUTHORIZED", json(deniedMe.body!!)["error"]["code"].asText())
 
+        val invalidMe = getJson("/api/users/me", "not-a-valid-access-token")
+        assertEquals(HttpStatus.UNAUTHORIZED, invalidMe.statusCode)
+        assertEquals("UNAUTHORIZED", json(invalidMe.body!!)["error"]["code"].asText())
+
         val me = getJson("/api/users/me", accessToken)
         assertEquals(HttpStatus.OK, me.statusCode)
         val meBody = json(me.body!!)

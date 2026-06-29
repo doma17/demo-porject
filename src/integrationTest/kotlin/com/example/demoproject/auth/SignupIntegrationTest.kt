@@ -85,6 +85,7 @@ class SignupIntegrationTest {
 			registry.add("spring.datasource.username", postgres::getUsername)
 			registry.add("spring.datasource.password", postgres::getPassword)
 			registry.add("spring.jpa.hibernate.ddl-auto") { "create" }
+			registry.add("auth.jwt.secret") { "integration-test-secret-must-be-at-least-32-bytes-long" }
 		}
 	}
 }

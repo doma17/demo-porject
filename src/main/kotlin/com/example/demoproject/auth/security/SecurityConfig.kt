@@ -22,6 +22,7 @@ import org.springframework.security.oauth2.jwt.JwtEncoder
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
+import org.springframework.security.web.AuthenticationEntryPoint
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.core.convert.converter.Converter
 import java.time.Clock
@@ -40,16 +41,20 @@ class SecurityConfig {
                     .anyRequest().authenticated()
             }
             .exceptionHandling { exceptions ->
-                exceptions.authenticationEntryPoint { _, response, _ ->
-                    response.status = HttpStatus.UNAUTHORIZED.value()
-                    response.contentType = MediaType.APPLICATION_JSON_VALUE
-                    objectMapper.writeValue(response.writer, ApiResponse.error("UNAUTHORIZED", "Authentication is required"))
-                }
+                exceptions.authenticationEntryPoint(apiAuthenticationEntryPoint(objectMapper))
             }
             .oauth2ResourceServer { resource ->
+                resource.authenticationEntryPoint(apiAuthenticationEntryPoint(objectMapper))
                 resource.jwt { jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()) }
             }
             .build()
+
+    private fun apiAuthenticationEntryPoint(objectMapper: ObjectMapper): AuthenticationEntryPoint =
+        AuthenticationEntryPoint { _, response, _ ->
+            response.status = HttpStatus.UNAUTHORIZED.value()
+            response.contentType = MediaType.APPLICATION_JSON_VALUE
+            objectMapper.writeValue(response.writer, ApiResponse.error("UNAUTHORIZED", "Authentication is required"))
+        }
 
     @Bean
     fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
