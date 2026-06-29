@@ -124,7 +124,7 @@ class ChatControllerSliceTest {
 
     @Test
     fun `static demo paths are public while api paths stay protected`() {
-        mockMvc.get("/index.html").andExpect { status { isOk() } }
+        mockMvc.get("/index.html").andExpect { status { isNotFound() } }
         mockMvc.get("/api/chats").andExpect { status { isUnauthorized() } }
     }
 

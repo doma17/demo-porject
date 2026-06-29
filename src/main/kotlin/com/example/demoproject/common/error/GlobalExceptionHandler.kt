@@ -23,32 +23,25 @@ class GlobalExceptionHandler {
     fun invalidRefreshToken(ex: InvalidRefreshTokenException): ResponseEntity<ApiResponse<Nothing>> =
         ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(ex.errorCode, ex.message))
 
-    @ExceptionHandler(DuplicateFeedbackException::class)
-    fun duplicateFeedback(ex: DuplicateFeedbackException): ResponseEntity<ApiResponse<Nothing>> =
-        ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(ex.errorCode, ex.message))
-
-    @ExceptionHandler(FeedbackNotFoundException::class)
-    fun feedbackNotFound(ex: FeedbackNotFoundException): ResponseEntity<ApiResponse<Nothing>> =
-        ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.errorCode, ex.message))
-
-    @ExceptionHandler(ForbiddenOperationException::class)
-    fun forbiddenOperation(ex: ForbiddenOperationException): ResponseEntity<ApiResponse<Nothing>> =
-        ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(ex.errorCode, ex.message))
-
     @ExceptionHandler(ForbiddenException::class)
     fun forbidden(ex: ForbiddenException): ResponseEntity<ApiResponse<Nothing>> =
         ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(ex.errorCode, ex.message))
 
-    @ExceptionHandler(ApiException::class)
-    fun apiException(ex: ApiException): ResponseEntity<ApiResponse<Nothing>> {
-        val status = when (ex.errorCode) {
-            "AI_PROVIDER_ERROR" -> HttpStatus.BAD_GATEWAY
-            "STREAMING_NOT_READY" -> HttpStatus.NOT_IMPLEMENTED
-            "THREAD_NOT_FOUND" -> HttpStatus.NOT_FOUND
-            else -> HttpStatus.BAD_REQUEST
-        }
-        return ResponseEntity.status(status).body(ApiResponse.error(ex.errorCode, ex.message))
-    }
+    @ExceptionHandler(ThreadNotFoundException::class)
+    fun threadNotFound(ex: ThreadNotFoundException): ResponseEntity<ApiResponse<Nothing>> =
+        ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.errorCode, ex.message))
+
+    @ExceptionHandler(ChatNotFoundException::class)
+    fun chatNotFound(ex: ChatNotFoundException): ResponseEntity<ApiResponse<Nothing>> =
+        ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.errorCode, ex.message))
+
+    @ExceptionHandler(StreamingNotReadyException::class)
+    fun streamingNotReady(ex: StreamingNotReadyException): ResponseEntity<ApiResponse<Nothing>> =
+        ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(ApiResponse.error(ex.errorCode, ex.message))
+
+    @ExceptionHandler(AiProviderException::class)
+    fun aiProvider(ex: AiProviderException): ResponseEntity<ApiResponse<Nothing>> =
+        ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(ApiResponse.error(ex.errorCode, ex.message))
 
     @ExceptionHandler(JwtException::class)
     fun invalidJwt(ex: JwtException): ResponseEntity<ApiResponse<Nothing>> =
