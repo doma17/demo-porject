@@ -21,18 +21,6 @@ repositories {
 }
 
 
-sourceSets {
-	integrationTest {
-		compileClasspath += sourceSets.main.output
-		runtimeClasspath += sourceSets.main.output
-	}
-}
-
-configurations {
-	integrationTestImplementation.extendsFrom testImplementation
-	integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
-}
-
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -59,7 +47,6 @@ kotlin {
 
 tasks.named('test') {
 	useJUnitPlatform()
-	dependsOn tasks.named('integrationTest')
 }
 
 tasks.register('unitTest', Test) {
@@ -83,15 +70,11 @@ tasks.register('sliceTest', Test) {
 }
 
 tasks.register('integrationTest', Test) {
-	description = 'Runs integration tests tagged with @Tag("integration") using Testcontainers.'
+	description = 'Runs integration tests tagged with @Tag("integration") from the shared test source set using Testcontainers.'
 	group = 'verification'
-	testClassesDirs = sourceSets.integrationTest.output.classesDirs
-	classpath = sourceSets.integrationTest.runtimeClasspath
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
 	useJUnitPlatform {
 		includeTags 'integration'
 	}
-}
-
-tasks.named('check') {
-	dependsOn tasks.named('integrationTest')
 }

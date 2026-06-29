@@ -35,11 +35,10 @@ RequestDto -> Data/Command -> Service -> Result -> ResponseDto -> ApiResponse<T>
 - Slice 테스트: WebMvc/DataJpa 등 Spring Slice 범위만 로딩해 경계 계층을 검증하며 `@Tag("slice")`를 사용한다.
 - 통합 테스트: 실제 PostgreSQL 의존성이 필요한 시나리오를 검증하며 `@Tag("integration")`를 사용하고 Testcontainers로 `postgres:15.8` 컨테이너를 구동한다.
 
-테스트 소스 위치와 실행 기준은 다음과 같다.
+테스트 소스 위치와 실행 기준은 다음과 같다. 모든 테스트 코드는 하나의 테스트 소스셋에 두고, 실행 분리는 JUnit 5 태그와 Gradle 태스크가 담당한다.
 
 ```text
-src/test/kotlin              # unit, slice 테스트
-src/integrationTest/kotlin   # integration 테스트
+src/test/kotlin              # unit, slice, integration 테스트
 ```
 
 Gradle 실행 기준:
@@ -51,7 +50,7 @@ Gradle 실행 기준:
 ./gradlew test              # 전체 테스트 실행
 ```
 
-일반 `test` 태스크는 특정 태그를 제외하지 않고 전체 테스트를 실행해야 한다. 통합 테스트는 `integrationTest` 태스크로 분리하되, `./gradlew test` 실행 시에도 함께 실행되도록 구성한다. 통합 테스트 클래스는 `@Testcontainers`와 `@Container` 또는 Spring Boot `@ServiceConnection`을 사용해 컨테이너 생명주기를 테스트 내부에 명시한다.
+일반 `test` 태스크는 특정 태그를 제외하지 않고 `src/test/kotlin`의 전체 테스트를 실행해야 한다. `unitTest`, `sliceTest`, `integrationTest` 태스크는 별도 모듈이나 별도 sourceSet이 아니라 동일한 `src/test/kotlin` 테스트 클래스에서 JUnit 5 태그만 필터링해 실행한다. 통합 테스트 클래스는 `@Testcontainers`와 `@Container` 또는 Spring Boot `@ServiceConnection`을 사용해 컨테이너 생명주기를 테스트 내부에 명시한다.
 
 
 ## 기능 요구사항
