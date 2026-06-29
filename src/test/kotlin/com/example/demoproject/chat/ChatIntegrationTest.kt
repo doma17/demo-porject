@@ -3,6 +3,9 @@ package com.example.demoproject.chat
 import com.example.demoproject.ai.AiClient
 import com.example.demoproject.ai.AiCompletionCommand
 import com.example.demoproject.ai.AiCompletionResult
+import com.example.demoproject.analytics.persistence.ActivityLogRepository
+import com.example.demoproject.analytics.persistence.ActivityType
+import com.example.demoproject.analytics.persistence.ChatReportEntryRepository
 import com.example.demoproject.chat.persistence.ChatRepository
 import com.example.demoproject.chat.persistence.ChatThreadRepository
 import com.example.demoproject.user.persistence.UserRepository
@@ -51,6 +54,12 @@ class ChatIntegrationTest {
     @Autowired
     lateinit var chatRepository: ChatRepository
 
+    @Autowired
+    lateinit var activityLogRepository: ActivityLogRepository
+
+    @Autowired
+    lateinit var chatReportEntryRepository: ChatReportEntryRepository
+
     @LocalServerPort
     var port: Int = 0
 
@@ -80,6 +89,8 @@ class ChatIntegrationTest {
         assertNotEquals(firstThreadId, secondThreadId)
         assertEquals("override-model", thirdBody["data"]["model"].asText())
         assertEquals(3, chatRepository.count())
+        assertEquals(3, chatReportEntryRepository.count())
+        assertEquals(3, activityLogRepository.countByTypeAndCreatedAtBetween(ActivityType.CHAT_CREATED, Instant.now().minusSeconds(60), Instant.now().plusSeconds(60)))
 
         val list = getJson("/api/chats?sort=createdAt,asc&page=0&size=10", token)
         assertEquals(HttpStatus.OK, list.statusCode)

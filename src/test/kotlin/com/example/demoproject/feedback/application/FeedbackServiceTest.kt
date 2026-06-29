@@ -1,5 +1,9 @@
 package com.example.demoproject.feedback.application
 
+import com.example.demoproject.chat.persistence.ChatEntity
+import com.example.demoproject.chat.persistence.ChatRepository
+import com.example.demoproject.chat.persistence.ChatThreadEntity
+import com.example.demoproject.common.error.ChatNotFoundException
 import com.example.demoproject.common.error.DuplicateFeedbackException
 import com.example.demoproject.common.error.ForbiddenOperationException
 import com.example.demoproject.feedback.persistence.FeedbackEntity
@@ -30,14 +34,16 @@ import java.util.UUID
 class FeedbackServiceTest {
     private val feedbackRepository = mock(FeedbackRepository::class.java)
     private val userRepository = mock(UserRepository::class.java)
+    private val chatRepository = mock(ChatRepository::class.java)
     private val clock = Clock.fixed(Instant.parse("2026-06-29T00:00:00Z"), ZoneOffset.UTC)
-    private val service = FeedbackService(feedbackRepository, userRepository, clock)
+    private val service = FeedbackService(feedbackRepository, userRepository, chatRepository, clock)
 
     @Test
     fun `create stores pending feedback once per user and chat`() {
         val user = user(id = UUID.randomUUID())
         val chatId = UUID.randomUUID()
         `when`(userRepository.findById(user.id!!)).thenReturn(Optional.of(user))
+        `when`(chatRepository.findById(chatId)).thenReturn(Optional.of(chat(user = user, chatId = chatId)))
         `when`(feedbackRepository.existsByUser_IdAndChatId(user.id!!, chatId)).thenReturn(false)
         doAnswer { invocation ->
             (invocation.arguments[0] as FeedbackEntity).also { it.id = UUID.fromString("00000000-0000-0000-0000-000000000101") }
@@ -57,10 +63,37 @@ class FeedbackServiceTest {
         val user = user(id = UUID.randomUUID())
         val chatId = UUID.randomUUID()
         `when`(userRepository.findById(user.id!!)).thenReturn(Optional.of(user))
+        `when`(chatRepository.findById(chatId)).thenReturn(Optional.of(chat(user = user, chatId = chatId)))
         `when`(feedbackRepository.existsByUser_IdAndChatId(user.id!!, chatId)).thenReturn(true)
 
         assertThrows(DuplicateFeedbackException::class.java) {
             service.create(CreateFeedbackCommand(user.id!!, chatId, positive = false))
+        }
+    }
+
+
+    @Test
+    fun `create rejects feedback for missing chat`() {
+        val user = user(id = UUID.randomUUID())
+        val chatId = UUID.randomUUID()
+        `when`(userRepository.findById(user.id!!)).thenReturn(Optional.of(user))
+        `when`(chatRepository.findById(chatId)).thenReturn(Optional.empty())
+
+        assertThrows(ChatNotFoundException::class.java) {
+            service.create(CreateFeedbackCommand(user.id!!, chatId, positive = true))
+        }
+    }
+
+    @Test
+    fun `member cannot create feedback for another users chat`() {
+        val user = user(id = UUID.randomUUID())
+        val owner = user(id = UUID.randomUUID())
+        val chatId = UUID.randomUUID()
+        `when`(userRepository.findById(user.id!!)).thenReturn(Optional.of(user))
+        `when`(chatRepository.findById(chatId)).thenReturn(Optional.of(chat(user = owner, chatId = chatId)))
+
+        assertThrows(ForbiddenOperationException::class.java) {
+            service.create(CreateFeedbackCommand(user.id!!, chatId, positive = true))
         }
     }
 
@@ -124,6 +157,15 @@ class FeedbackServiceTest {
         passwordHash = "hash",
         name = "User",
         role = role,
+        createdAt = clock.instant(),
+    )
+
+    private fun chat(user: UserEntity, chatId: UUID): ChatEntity = ChatEntity(
+        id = chatId,
+        thread = ChatThreadEntity(user = user, createdAt = clock.instant(), updatedAt = clock.instant(), lastChatAt = clock.instant()),
+        user = user,
+        question = "question",
+        answer = "answer",
         createdAt = clock.instant(),
     )
 

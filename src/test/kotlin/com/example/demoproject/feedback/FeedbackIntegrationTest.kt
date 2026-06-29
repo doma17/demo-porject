@@ -1,5 +1,9 @@
 package com.example.demoproject.feedback
 
+import com.example.demoproject.chat.persistence.ChatEntity
+import com.example.demoproject.chat.persistence.ChatRepository
+import com.example.demoproject.chat.persistence.ChatThreadEntity
+import com.example.demoproject.chat.persistence.ChatThreadRepository
 import com.example.demoproject.feedback.persistence.FeedbackRepository
 import com.example.demoproject.user.persistence.UserEntity
 import com.example.demoproject.user.persistence.UserRepository
@@ -47,13 +51,38 @@ class FeedbackIntegrationTest {
     @Autowired
     lateinit var passwordEncoder: PasswordEncoder
 
+    @Autowired
+    lateinit var threadRepository: ChatThreadRepository
+
+    @Autowired
+    lateinit var chatRepository: ChatRepository
+
     @LocalServerPort
     var port: Int = 0
 
     @Test
     fun `feedback can be created listed and resolved by admin`() {
-        val memberToken = signupAndLogin("feedback-${System.nanoTime()}@example.com")
-        val chatId = UUID.randomUUID()
+        val email = "feedback-${System.nanoTime()}@example.com"
+        val memberToken = signupAndLogin(email)
+        val member = userRepository.findByEmail(email).orElseThrow()
+        val chatId = createChatFor(member)
+
+        val missingChat = postJson("/api/feedback", mapOf("chatId" to UUID.randomUUID(), "positive" to true), memberToken)
+        assertEquals(HttpStatus.NOT_FOUND, missingChat.statusCode)
+        assertEquals("CHAT_NOT_FOUND", json(missingChat.body!!)["error"]["code"].asText())
+
+        val other = userRepository.save(
+            UserEntity(
+                email = "other-${System.nanoTime()}@example.com",
+                passwordHash = passwordEncoder.encode("password123"),
+                name = "Other",
+                role = UserRole.member,
+                createdAt = Instant.now(),
+            ),
+        )
+        val otherChatId = createChatFor(other)
+        val forbidden = postJson("/api/feedback", mapOf("chatId" to otherChatId, "positive" to true), memberToken)
+        assertEquals(HttpStatus.FORBIDDEN, forbidden.statusCode)
 
         val created = postJson("/api/feedback", mapOf("chatId" to chatId, "positive" to false), memberToken)
         assertEquals(HttpStatus.CREATED, created.statusCode)
@@ -100,6 +129,22 @@ class FeedbackIntegrationTest {
             ),
         )
         return login(email)
+    }
+
+    private fun createChatFor(user: UserEntity): UUID {
+        val now = Instant.now()
+        val thread = threadRepository.save(ChatThreadEntity(user = user, createdAt = now, updatedAt = now, lastChatAt = now))
+        val chat = chatRepository.save(
+            ChatEntity(
+                thread = thread,
+                user = user,
+                question = "question",
+                answer = "answer",
+                model = "test",
+                createdAt = now,
+            ),
+        )
+        return requireNotNull(chat.id)
     }
 
     private fun login(email: String): String {

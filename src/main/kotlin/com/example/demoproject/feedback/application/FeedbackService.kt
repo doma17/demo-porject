@@ -3,7 +3,9 @@ package com.example.demoproject.feedback.application
 import com.example.demoproject.common.error.DuplicateFeedbackException
 import com.example.demoproject.common.error.FeedbackNotFoundException
 import com.example.demoproject.common.error.ForbiddenOperationException
+import com.example.demoproject.common.error.ChatNotFoundException
 import com.example.demoproject.common.error.InvalidCredentialsException
+import com.example.demoproject.chat.persistence.ChatRepository
 import com.example.demoproject.feedback.persistence.FeedbackEntity
 import com.example.demoproject.feedback.persistence.FeedbackRepository
 import com.example.demoproject.feedback.persistence.FeedbackStatus
@@ -23,12 +25,16 @@ import java.util.UUID
 class FeedbackService(
     private val feedbackRepository: FeedbackRepository,
     private val userRepository: UserRepository,
+    private val chatRepository: ChatRepository,
     private val clock: Clock,
 ) {
     @Transactional
     fun create(command: CreateFeedbackCommand): FeedbackResult {
         val user = findUser(command.userId)
         val userId = requireNotNull(user.id)
+        val chat = chatRepository.findById(command.chatId).orElseThrow { ChatNotFoundException() }
+        val chatOwnerId = requireNotNull(chat.user.id)
+        if (user.role != UserRole.admin && chatOwnerId != userId) throw ForbiddenOperationException()
         if (feedbackRepository.existsByUser_IdAndChatId(userId, command.chatId)) throw DuplicateFeedbackException()
 
         val feedback = feedbackRepository.save(

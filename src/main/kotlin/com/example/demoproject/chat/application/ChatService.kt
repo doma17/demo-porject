@@ -3,6 +3,7 @@ package com.example.demoproject.chat.application
 import com.example.demoproject.ai.AiClient
 import com.example.demoproject.ai.AiCompletionCommand
 import com.example.demoproject.ai.AiMessage
+import com.example.demoproject.analytics.application.ChatReportService
 import com.example.demoproject.chat.persistence.ChatEntity
 import com.example.demoproject.chat.persistence.ChatRepository
 import com.example.demoproject.chat.persistence.ChatThreadEntity
@@ -28,6 +29,7 @@ class ChatService(
     private val threadRepository: ChatThreadRepository,
     private val chatRepository: ChatRepository,
     private val aiClient: AiClient,
+    private val chatReportService: ChatReportService,
     private val clock: Clock,
 ) {
     private val threadPolicy = ThreadPolicy()
@@ -60,6 +62,7 @@ class ChatService(
         )
         thread.touch(now)
         threadRepository.save(thread)
+        chatReportService.recordChat(user, chat.question, chat.answer)
         return chat.toResult(requireNotNull(thread.id))
     }
 
