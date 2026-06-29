@@ -116,6 +116,10 @@ class ChatIntegrationTest {
         assertEquals(0, chatRepository.count())
     }
 
+
+    private fun anyAiCompletionCommand(): AiCompletionCommand =
+        any(AiCompletionCommand::class.java) ?: AiCompletionCommand(model = null, messages = emptyList())
+
     private fun signupAndLogin(email: String): String {
         exchange("/api/auth/signup", HttpMethod.POST, mapOf("email" to email, "password" to "password123", "name" to "Member"), null)
         val login = exchange("/api/auth/login", HttpMethod.POST, mapOf("email" to email, "password" to "password123"), null)
